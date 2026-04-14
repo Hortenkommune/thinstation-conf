@@ -1,0 +1,69 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+
+# Allow loopback
+-A INPUT -i lo -j ACCEPT
+-A OUTPUT -o lo -j ACCEPT
+
+# Allow all ICMP traffic
+-A OUTPUT -p icmp -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+
+# Allow SSH from management network
+-A OUTPUT -d 10.82.66.0/24 -p tcp -m tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+-A INPUT -s 10.82.66.0/24 -p tcp -m tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow DNS from nameservers
+-A INPUT -s 10.82.17.0/24 -p tcp -m tcp --sport 53 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.17.0/24 -p tcp -m tcp --dport 53 -m state --state ESTABLISHED -j ACCEPT
+-A INPUT -s 10.82.17.0/24 -p udp -m udp --sport 53 -j ACCEPT
+-A OUTPUT -d 10.82.17.0/24 -p udp -m udp --dport 53 -j ACCEPT
+
+# Allow DHCP requests
+-A OUTPUT -d 10.82.24.0/24 -p udp --dport 67:68 --sport 67:68 -j ACCEPT
+-A INPUT -s 10.82.24.0/24 -p udp --sport 67:68 --dport 67:68 -j ACCEPT
+
+# Allow NTP requests
+-A OUTPUT -p udp --dport 123 -j ACCEPT
+-A INPUT -p udp --sport 123 -j ACCEPT
+
+# Allow HTTPS to StoreFront
+-A INPUT -s 10.82.24.92 -p tcp -m tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.24.92 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT -s 10.82.24.156 -p tcp -m tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.24.156 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT -s 10.82.24.159 -p tcp -m tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.24.159 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow HTTPS to thinclient management
+-A INPUT -s 10.82.24.152 -p tcp -m tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.24.152 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow HTTPS to terminal servers
+-A INPUT -s 10.82.22.0/24 -p tcp -m tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow TCP ICA to terminal servers
+-A INPUT -s 10.82.22.0/24 -p tcp -m tcp --sport 1494 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p tcp -m tcp --dport 1494 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow UDP ICA to terminal servers
+-A INPUT -s 10.82.22.0/24 -p udp -m udp --sport 1494 -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p udp -m udp --dport 1494 -j ACCEPT
+
+# Allow TCP ICA session reliability to terminal servers
+-A INPUT -s 10.82.22.0/24 -p tcp -m tcp --sport 2598 -m state --state ESTABLISHED -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p tcp -m tcp --dport 2598 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+# Allow UDP ICA session reliability to terminal servers
+-A INPUT -s 10.82.22.0/24 -p udp -m udp --sport 2598 -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p udp -m udp --dport 2598 -j ACCEPT
+
+# Allow UDP ICA/HDX audio
+-A INPUT -s 10.82.22.0/24 -p udp -m udp --sport 16500:16509 -j ACCEPT
+-A OUTPUT -d 10.82.22.0/24 -p udp -m udp --dport 16500:16509 -j ACCEPT
+
+COMMIT
+

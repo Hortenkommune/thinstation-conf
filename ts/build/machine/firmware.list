@@ -1,0 +1,10 @@
+firmware iwlwifi-so-a0-gf-a0.pnvm.xz
+firmware iwlwifi-so-a0-gf-a0-89.ucode.xz
+firmware regulatory.db.p7s
+firmware regulatory.db
+firmware rtl_nic/rtl8125d-1.fw.xz
+firmware i915/tgl_huc.bin.xz
+firmware i915/tgl_huc_7.9.3.bin.xz
+firmware i915/tgl_guc_70.bin.xz
+firmware i915/adlp_dmc.bin.xz
+firmware intel-ucode/06-ad-01

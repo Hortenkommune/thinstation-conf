@@ -1,0 +1,32 @@
+#!/bin/sh
+/opt/Citrix/ICAClient/util/storebrowse -a $1
+status=$?
+if [ $status != 0 ]; then exit $status; fi
+if [ "$2" == "--storegateway" ]; then
+/opt/Citrix/ICAClient/util/storebrowse $2 $3 $4
+fi
+
+selfservice &
+SS_PID=$!
+
+# Monitor for ICA session end — kill selfservice to force
+# session restart and credential cleanup via DESTRUCTIVE_RELOAD
+(
+    while true; do
+        if pidof wfica > /dev/null 2>&1; then
+            sleep 5
+            if pidof wfica > /dev/null 2>&1; then
+                while pidof wfica > /dev/null 2>&1; do
+                    sleep 2
+                done
+                logger --tag icastore "ICA session ended, restarting for credential cleanup"
+                kill $SS_PID 2>/dev/null
+                exit 0
+            fi
+        fi
+        sleep 2
+        kill -0 $SS_PID 2>/dev/null || exit 0
+    done
+) &
+
+wait $SS_PID 2>/dev/null

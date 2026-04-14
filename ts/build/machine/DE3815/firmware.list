@@ -1,0 +1,17 @@
+firmware mt7662_rom_patch.bin.xz
+firmware mt7601u.bin.xz
+firmware mt7662.bin.xz
+firmware ath10k/QCA9377/hw1.0/firmware-5.bin.xz
+firmware radeon/CAICOS_mc.bin.xz
+firmware radeon/CAICOS_me.bin.xz
+firmware radeon/TURKS_smc.bin.xz
+firmware radeon/TURKS_mc.bin.xz
+firmware radeon/TURKS_me.bin.xz
+firmware radeon/BARTS_mc.bin.xz
+firmware radeon/BARTS_me.bin.xz
+firmware mediatek/mt7610u.bin.xz
+firmware mediatek/mt7662_rom_patch.bin.xz
+firmware mediatek/mt7662.bin.xz
+firmware mediatek/mt7601u.bin.xz
+firmware intel/sof/intel-signed/sof-tgl.ri.xz
+firmware rtl_nic/rtl8168g-2.fw.xz
