@@ -14,9 +14,9 @@
       loop:
         - "{{ boot_images_dir }}/grub/efi-source/EFI/BOOT/BOOTX64.EFI"
         - "{{ boot_images_dir }}/grub/efi-source/undionly.kpxe"
-        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/vmlinuz"
-        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/initrd"
-        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/lib.squash"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/vmlinuz"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/initrd"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/lib.squash"
       register: artifact_stats
       failed_when: not artifact_stats.stat.exists or artifact_stats.stat.size == 0
       loop_control:
@@ -31,7 +31,7 @@
         stale=0
         for f in "{{ boot_images_dir }}/grub/efi-source/EFI/BOOT/BOOTX64.EFI" \
                  "{{ boot_images_dir }}/grub/efi-source/undionly.kpxe" \
-                 "{{ boot_images_dir }}/grub/efi-source/boot/grub2/vmlinuz"; do
+                 "{{ boot_images_dir }}/grub/efi-source/boot/vmlinuz"; do
           mtime=$(stat -c %Y "$f")
           if [ "$mtime" -lt "$cutoff" ]; then
             echo "STALE: $f"
