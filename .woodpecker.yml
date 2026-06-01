@@ -58,7 +58,7 @@ steps:
       inventory: deploy/ansible/inventory
       galaxy: deploy/ansible/requirements.yml
       private_key:
-        from_secret: SSH_PRIVATE_KEY
+        from_secret: ansible_privatekey
       check: true
       diff: true
       extra_vars: *devstation_extra_vars
@@ -77,7 +77,7 @@ steps:
       inventory: deploy/ansible/inventory
       galaxy: deploy/ansible/requirements.yml
       private_key:
-        from_secret: SSH_PRIVATE_KEY
+        from_secret: ansible_privatekey
       ssh-extra-args: "-o StrictHostKeyChecking=no"
       extra_vars: *devstation_extra_vars
     when:
@@ -96,7 +96,7 @@ steps:
       inventory: deploy/ansible/inventory
       galaxy: deploy/ansible/requirements.yml
       private_key:
-        from_secret: SSH_PRIVATE_KEY
+        from_secret: ansible_privatekey
       ssh-extra-args: "-o StrictHostKeyChecking=no"
       extra_vars: *devstation_extra_vars
     when:
@@ -113,7 +113,7 @@ steps:
       inventory: deploy/ansible/inventory
       galaxy: deploy/ansible/requirements.yml
       private_key:
-        from_secret: SSH_PRIVATE_KEY
+        from_secret: ansible_privatekey
       ssh-extra-args: "-o StrictHostKeyChecking=no"
       extra_vars: *devstation_extra_vars
     when:
@@ -130,7 +130,7 @@ steps:
       inventory: deploy/ansible/inventory
       galaxy: deploy/ansible/requirements.yml
       private_key:
-        from_secret: SSH_PRIVATE_KEY
+        from_secret: ansible_privatekey
       ssh-extra-args: "-o StrictHostKeyChecking=no"
       extra_vars: *devstation_extra_vars
     when:
