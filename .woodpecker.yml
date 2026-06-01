@@ -1,6 +1,6 @@
 when:
   - event: [push, pull_request, manual]
-  - branch: [main]
+    branch: [main]
 
 variables:
   - &devstation_extra_vars
@@ -23,6 +23,9 @@ steps:
       - |
         which ansible-lint
         ansible-lint deploy/ansible/
+    when:
+      event: [push, pull_request, manual]
+      branch: [main]
 
   cache-ansible-deps:
     image: woodpeckerci/plugin-ansible

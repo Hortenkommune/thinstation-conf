@@ -33,8 +33,10 @@
 
     - name: Prune backups beyond retention
       ansible.builtin.shell: |
-        set -e
+        set -eo pipefail
         cd "{{ backup_dir }}"
-        ls -1dt boot-images-* 2>/dev/null | tail -n +{{ backup_keep + 1 }} | xargs -r rm -rf
+        # `ls` exits non-zero when the glob matches nothing (first run, no
+        # backups yet). `|| true` keeps pipefail from tripping on that.
+        ( ls -1dt boot-images-* 2>/dev/null || true ) | tail -n +{{ backup_keep + 1 }} | xargs -r rm -rf
       changed_when: false
       when: not ansible_check_mode
