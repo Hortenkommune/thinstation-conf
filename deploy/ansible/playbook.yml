@@ -1,0 +1,64 @@
+---
+- name: Build ThinStation image on devstation
+  hosts: devstation
+  gather_facts: true
+  remote_user: ansible
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  tasks:
+    - name: Verify thinstation-ng build root exists
+      ansible.builtin.stat:
+        path: "{{ buildroot }}"
+      register: buildroot_stat
+      failed_when: not buildroot_stat.stat.exists or not buildroot_stat.stat.isdir
+      check_mode: false
+
+    - name: Verify thinstation-conf clone exists
+      ansible.builtin.stat:
+        path: "{{ conf_dir }}/.git"
+      register: conf_git_stat
+      failed_when: not conf_git_stat.stat.exists
+      check_mode: false
+
+    # First-run idempotent migration: the on-server clone might still be on
+    # the old `master` branch from before the Forgejo migration. Reset onto
+    # origin/main unconditionally so subsequent runs are a no-op and the
+    # branch rename is handled automatically.
+    - name: Fetch + reset conf clone to origin/{{ github_repo_branch }}
+      ansible.builtin.shell: |
+        set -e
+        cd {{ conf_dir }}
+        git fetch origin --prune
+        current=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+        if [ "$current" != "{{ github_repo_branch }}" ]; then
+          git checkout -B {{ github_repo_branch }} origin/{{ github_repo_branch }}
+        fi
+        git reset --hard origin/{{ github_repo_branch }}
+        git rev-parse HEAD
+      register: conf_pull
+      changed_when: true
+
+    - name: Render build.sh onto devstation
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../build.sh"
+        dest: "{{ build_script_path }}"
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Run build.sh (long-running; async with poll)
+      ansible.builtin.command: "{{ build_script_path }}"
+      async: "{{ build_timeout_seconds }}"
+      poll: "{{ build_poll_seconds }}"
+      register: build_run
+      changed_when: true
+      when: not ansible_check_mode
+
+    - name: Summarise build outcome
+      ansible.builtin.debug:
+        msg: >-
+          conf={{ conf_pull.stdout_lines[-1] | default('?') }}
+          build_rc={{ build_run.rc | default('?') }}
+          duration={{ build_run.delta | default('?') }}

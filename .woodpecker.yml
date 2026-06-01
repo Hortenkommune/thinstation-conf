@@ -1,0 +1,158 @@
+when:
+  - event: [push, pull_request, manual]
+  - branch: [main]
+
+variables:
+  - &devstation_extra_vars
+    ansible_become_password:
+      from_secret: ansible_sudo_password
+
+steps:
+  validate-ansible:
+    image: registry.horten.kommune.no/custom-ansible-lint:latest
+    pull: true
+    commands:
+      - |
+        for playbook in deploy/ansible/*.yml; do
+          case "$playbook" in
+            *requirements.yml) continue ;;
+          esac
+          echo "Syntax check: $playbook"
+          ansible-playbook --syntax-check "$playbook"
+        done
+      - |
+        which ansible-lint
+        ansible-lint deploy/ansible/
+
+  cache-ansible-deps:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [validate-ansible]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    commands:
+      - ansible-galaxy collection install -r deploy/ansible/requirements.yml
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  prepare-inventory:
+    image: alpine:latest
+    depends_on: [validate-ansible]
+    environment:
+      HOST:
+        from_secret: HOST
+    commands:
+      - echo "[devstation]" > deploy/ansible/inventory
+      - echo "$HOST" >> deploy/ansible/inventory
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  dry-run-test:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [prepare-inventory, cache-ansible-deps]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    settings:
+      playbook: deploy/ansible/playbook.yml
+      inventory: deploy/ansible/inventory
+      galaxy: deploy/ansible/requirements.yml
+      private_key:
+        from_secret: SSH_PRIVATE_KEY
+      check: true
+      diff: true
+      extra_vars: *devstation_extra_vars
+      ssh-extra-args: "-o StrictHostKeyChecking=no"
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  backup:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [dry-run-test]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    settings:
+      playbook: deploy/ansible/backup.yml
+      inventory: deploy/ansible/inventory
+      galaxy: deploy/ansible/requirements.yml
+      private_key:
+        from_secret: SSH_PRIVATE_KEY
+      ssh-extra-args: "-o StrictHostKeyChecking=no"
+      extra_vars: *devstation_extra_vars
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  # Long-running. ThinStation rebuilds take 20-40+ minutes; the playbook uses
+  # async with a hard ceiling from build_timeout_seconds in group_vars/all.yml.
+  deploy:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [backup]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    settings:
+      playbook: deploy/ansible/playbook.yml
+      inventory: deploy/ansible/inventory
+      galaxy: deploy/ansible/requirements.yml
+      private_key:
+        from_secret: SSH_PRIVATE_KEY
+      ssh-extra-args: "-o StrictHostKeyChecking=no"
+      extra_vars: *devstation_extra_vars
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  health-check:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [deploy]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    settings:
+      playbook: deploy/ansible/health-check.yml
+      inventory: deploy/ansible/inventory
+      galaxy: deploy/ansible/requirements.yml
+      private_key:
+        from_secret: SSH_PRIVATE_KEY
+      ssh-extra-args: "-o StrictHostKeyChecking=no"
+      extra_vars: *devstation_extra_vars
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  rollback-on-failure:
+    image: woodpeckerci/plugin-ansible
+    depends_on: [health-check]
+    volumes:
+      - /root/woodpecker-cache/collections:/root/.ansible/collections
+    settings:
+      playbook: deploy/ansible/rollback.yml
+      inventory: deploy/ansible/inventory
+      galaxy: deploy/ansible/requirements.yml
+      private_key:
+        from_secret: SSH_PRIVATE_KEY
+      ssh-extra-args: "-o StrictHostKeyChecking=no"
+      extra_vars: *devstation_extra_vars
+    when:
+      - status: [failure]
+        event: [push, manual]
+        branch: [main]
+
+  notify-success:
+    image: alpine:latest
+    depends_on: [health-check]
+    commands:
+      - echo "thinstation-conf build + deploy completed"
+    when:
+      event: [push, manual]
+      branch: [main]
+
+  notify-failure:
+    image: alpine:latest
+    depends_on: [deploy]
+    commands:
+      - echo "thinstation-conf build + deploy FAILED"
+    when:
+      - status: [failure]
+        event: [push, manual]
+        branch: [main]

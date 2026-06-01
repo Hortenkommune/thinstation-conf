@@ -1,0 +1,40 @@
+---
+- name: Snapshot boot-images before rebuild
+  hosts: devstation
+  gather_facts: false
+  remote_user: ansible
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  tasks:
+    - name: Ensure backup dir exists
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+      check_mode: false
+
+    - name: Snapshot current boot-images
+      ansible.builtin.shell: |
+        set -e
+        if [ ! -d "{{ boot_images_dir }}" ]; then
+          echo "no boot-images yet to back up"
+          exit 0
+        fi
+        ts=$(date -u +%Y%m%dT%H%M%SZ)
+        dest="{{ backup_dir }}/boot-images-$ts"
+        cp -a "{{ boot_images_dir }}" "$dest"
+        printf '%s\n' "$dest" > "{{ backup_dir }}/.last_backup"
+        echo "snapshot=$dest"
+      register: snapshot_result
+      changed_when: "'snapshot=' in snapshot_result.stdout"
+      when: not ansible_check_mode
+
+    - name: Prune backups beyond retention
+      ansible.builtin.shell: |
+        set -e
+        cd "{{ backup_dir }}"
+        ls -1dt boot-images-* 2>/dev/null | tail -n +{{ backup_keep + 1 }} | xargs -r rm -rf
+      changed_when: false
+      when: not ansible_check_mode

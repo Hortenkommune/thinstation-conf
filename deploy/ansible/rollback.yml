@@ -1,0 +1,34 @@
+---
+- name: Restore last good boot-images
+  hosts: devstation
+  gather_facts: false
+  remote_user: ansible
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  tasks:
+    - name: Check for backup pointer
+      ansible.builtin.stat:
+        path: "{{ backup_dir }}/.last_backup"
+      register: pointer_stat
+
+    - name: Read last backup path
+      ansible.builtin.slurp:
+        src: "{{ backup_dir }}/.last_backup"
+      register: last_backup_blob
+      when: pointer_stat.stat.exists
+
+    - name: Restore boot-images from last backup
+      ansible.builtin.shell: |
+        set -e
+        last="{{ (last_backup_blob.content | b64decode | trim) if pointer_stat.stat.exists else '' }}"
+        if [ -z "$last" ] || [ ! -d "$last" ]; then
+          echo "no backup available to restore"
+          exit 0
+        fi
+        rm -rf "{{ boot_images_dir }}"
+        cp -a "$last" "{{ boot_images_dir }}"
+        echo "restored from $last"
+      when: pointer_stat.stat.exists
+      changed_when: true

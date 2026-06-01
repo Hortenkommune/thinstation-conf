@@ -1,0 +1,18 @@
+---
+# Devstation paths (mirror /data layout on isdevsta01).
+buildroot: /data/ts72                          # thinstation-ng source
+conf_dir: /data/conf                           # thinstation-conf clone (pulled from GitHub)
+output_dir: /data/thinstation-ng/build         # build.sh's $OUTDIR
+boot_images_dir: "{{ output_dir }}/boot-images"
+build_script_path: /data/build.sh              # rendered from deploy/build.sh
+backup_dir: "{{ output_dir }}/backups"
+backup_keep: 3                                 # keep last N snapshots
+
+# Source repo. devstation can reach github.com but not forgejo.intern.i-sone.no,
+# so the server pulls from the GitHub mirror (Forgejo push-syncs to it).
+github_repo_url: https://github.com/Hortenkommune/thinstation-conf.git
+github_repo_branch: main
+
+# Full ThinStation rebuild typically runs 20–40 minutes. async hard ceiling.
+build_timeout_seconds: 5400
+build_poll_seconds: 30

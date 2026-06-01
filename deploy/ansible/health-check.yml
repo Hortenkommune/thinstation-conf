@@ -1,0 +1,43 @@
+---
+- name: Verify build output
+  hosts: devstation
+  gather_facts: false
+  remote_user: ansible
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  tasks:
+    - name: Critical boot artifacts must exist with non-zero size
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ boot_images_dir }}/grub/efi-source/EFI/BOOT/BOOTX64.EFI"
+        - "{{ boot_images_dir }}/grub/efi-source/undionly.kpxe"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/vmlinuz"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/initrd"
+        - "{{ boot_images_dir }}/grub/efi-source/boot/grub2/lib.squash"
+      register: artifact_stats
+      failed_when: not artifact_stats.stat.exists or artifact_stats.stat.size == 0
+      loop_control:
+        label: "{{ item }}"
+
+    # mtime within build window proves build.sh actually wrote them. If the
+    # build silently failed but left old files, this catches it.
+    - name: Verify critical artifacts were rebuilt this run
+      ansible.builtin.shell: |
+        set -e
+        cutoff=$(date -d '{{ build_timeout_seconds }} seconds ago' +%s)
+        stale=0
+        for f in "{{ boot_images_dir }}/grub/efi-source/EFI/BOOT/BOOTX64.EFI" \
+                 "{{ boot_images_dir }}/grub/efi-source/undionly.kpxe" \
+                 "{{ boot_images_dir }}/grub/efi-source/boot/grub2/vmlinuz"; do
+          mtime=$(stat -c %Y "$f")
+          if [ "$mtime" -lt "$cutoff" ]; then
+            echo "STALE: $f"
+            stale=1
+          fi
+        done
+        if [ "$stale" -ne 0 ]; then exit 1; fi
+        echo "all critical artifacts fresh"
+      changed_when: false
