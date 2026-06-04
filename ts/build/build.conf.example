@@ -97,7 +97,7 @@ module fuse3                 # Updated FUSE version
 ### --- ThinStation Packages --- ###
 ####################################
 #package automount            # Automatically mount storage volumes during boot
-#package netfiles             # Package that downloads additional runtime config files during boot
+package netfiles             # Package that downloads additional runtime config files during boot
 #package persistent-files     # Scripts that will backup and restore files that need to persist
 #package idle-shutdown        # Package that lets you specify automatic shutdown settings and logic
 
