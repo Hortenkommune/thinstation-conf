@@ -48,6 +48,7 @@ SCREEN_SUSPEND_TIME=0
 SCREEN_OFF_TIME=0
 MEMORY_CONSTRAINED=true
 
+NET_FILE_ENABLED=On
 SESSION_1_TYPE=icastore
 SESSION_1_ICASTORE_SERVER="https://storefront.horten.kommune.no/citrix/storefrontintern/discovery"
 DESTRUCTIVE_RELOAD=true
